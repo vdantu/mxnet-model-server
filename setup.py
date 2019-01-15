@@ -98,7 +98,7 @@ class BuildFrontEnd(Command):
             rmtree('build/lib/')
 
         try:
-            subprocess.check_call('frontend/gradlew -p frontend build', shell=True)
+            subprocess.check_call('frontend/gradlew -p frontend jar', shell=True)
         except OSError:
             assert 0, "build failed"
         copyfile(source_server_file, dest_file_name)

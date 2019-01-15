@@ -14,6 +14,8 @@ package com.amazonaws.ml.mms.wlm;
 
 import com.amazonaws.ml.mms.util.ConfigManager;
 import io.netty.channel.EventLoopGroup;
+
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -106,7 +108,7 @@ public class WorkLoadManager {
 
             int currentWorkers = threads.size();
             if (currentWorkers < minWorker) {
-                addThreads(threads, model, minWorker - currentWorkers, future);
+                addThreads(threads, model, minWorker - currentWorkers, future, false);
             } else {
                 for (int i = currentWorkers - 1; i >= maxWorker; --i) {
                     // TODO: kill unhealthy worker first.
@@ -119,8 +121,28 @@ public class WorkLoadManager {
         }
     }
 
+    public CompletableFuture<Boolean> addServerThread(Model model) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        synchronized (model.getModelName()) {
+            model.setPort(port.getAndIncrement());
+            WorkerThread thread =
+                    new WorkerThread(
+                            configManager,
+                            backendGroup,
+                            model.getPort(),
+                            -1,
+                            model,
+                            null,
+                            null,
+                            true);
+            model.setServerThread(thread);
+            threadPool.submit(thread);
+        }
+        return future;
+    }
+
     private void addThreads(
-            List<WorkerThread> threads, Model model, int count, CompletableFuture<Boolean> future) {
+            List<WorkerThread> threads, Model model, int count, CompletableFuture<Boolean> future, boolean serverThread) {
         WorkerStateListener listener = new WorkerStateListener(future, count);
         int maxGpu = configManager.getNumberOfGpu();
         for (int i = 0; i < count; ++i) {
@@ -135,11 +157,12 @@ public class WorkLoadManager {
                     new WorkerThread(
                             configManager,
                             backendGroup,
-                            configManager.isDebug() ? port.get() : port.getAndIncrement(),
+                            model.getPort(),
                             gpuId,
                             model,
                             aggregator,
-                            listener);
+                            listener,
+                            serverThread);
             threads.add(thread);
             threadPool.submit(thread);
         }

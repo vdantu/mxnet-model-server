@@ -35,7 +35,12 @@ public class Model {
     private int maxWorkers;
     private int batchSize;
     private int maxBatchDelay;
+    // Port on which the model server is running
+
+    private AtomicInteger port;
     private ReentrantLock lock;
+
+    private WorkerThread serverThread;
 
     // Total number of subsequent inference request failures
     private AtomicInteger failedInfReqs;
@@ -51,6 +56,7 @@ public class Model {
         // Always have a queue for data
         jobsDb.putIfAbsent(DEFAULT_DATA_QUEUE, new LinkedBlockingDeque<>(queueSize));
         failedInfReqs = new AtomicInteger(0);
+        port = new AtomicInteger(-1);
         lock = new ReentrantLock();
     }
 
@@ -112,7 +118,7 @@ public class Model {
     }
 
     public void removeJobQueue(String threadId) {
-        if (!threadId.equals(DEFAULT_DATA_QUEUE)) {
+        if (!threadId.equals(DEFAULT_DATA_QUEUE) && jobsDb.containsKey(threadId)) {
             jobsDb.remove(threadId);
         }
     }
@@ -174,11 +180,27 @@ public class Model {
         }
     }
 
+    public int getPort() {
+        return port.get();
+    }
+
+    public void setPort(int port) {
+        this.port.set(port);
+    }
+
     public int incrFailedInfReqs() {
         return failedInfReqs.incrementAndGet();
     }
 
     public void resetFailedInfReqs() {
         failedInfReqs.set(0);
+    }
+
+    public WorkerThread getServerThread() {
+        return serverThread;
+    }
+
+    public void setServerThread(WorkerThread serverThread) {
+        this.serverThread = serverThread;
     }
 }

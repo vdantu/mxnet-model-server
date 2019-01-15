@@ -87,6 +87,7 @@ class Service(object):
         :return:
 
         """
+        logging.info("VDANTU Received predict request")
         headers, input_batch, req_id_map = Service.retrieve_data_for_inference(batch)
 
         self.context.request_ids = req_id_map

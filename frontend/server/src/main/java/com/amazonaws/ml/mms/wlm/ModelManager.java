@@ -98,6 +98,13 @@ public final class ModelManager {
             // model already exists
             throw new BadRequestException("Model " + modelName + " is already registered.");
         }
+
+        if (configManager.isDebug()) {
+            model.setPort(9000);
+        } else {
+            startBackendServer(model);
+        }
+
         logger.info("Model {} loaded.", model.getModelName());
         return archive;
     }
@@ -127,6 +134,13 @@ public final class ModelManager {
         model.setMaxWorkers(maxWorkers);
         logger.debug("updateModel: {}, count: {}", modelName, minWorkers);
         return wlm.modelChanged(model);
+    }
+
+    public CompletableFuture<Boolean> startBackendServer(Model model) {
+        if (model == null) {
+            throw new AssertionError("Model not found");
+        }
+        return wlm.addServerThread(model);
     }
 
     public Map<String, Model> getModels() {

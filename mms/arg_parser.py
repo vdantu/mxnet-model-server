@@ -81,6 +81,18 @@ class ArgParser(object):
                             type=str,
                             help='If \'sock-type\' is \'tcp\' this is expected to have the host port to bind on')
 
+        parser.add_argument('--handler',
+                            type=str,
+                            help='Entry point to the Model Server')
+
+        parser.add_argument('--model-path',
+                            type=str,
+                            help='Path to the actual model location')
+
+        parser.add_argument('--model-name',
+                            type=str,
+                            help='Name of the model')
+
         return parser
 
     @staticmethod
